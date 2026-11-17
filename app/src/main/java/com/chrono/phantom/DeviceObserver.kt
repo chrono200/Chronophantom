@@ -47,32 +47,40 @@ class DeviceObserver(private val context: Context, private val store: EventStore
         }
         prefs.edit().putLong("last_usage_sync", now).apply()
 
-        val batteryIntent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        val level = batteryIntent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
-        val scale = batteryIntent?.getIntExtra(BatteryManager.EXTRA_SCALE, 100) ?: 100
-        val percent = if (level >= 0 && scale > 0) level * 100 / scale else -1
-        if (percent >= 0) {
-            val previous = prefs.getInt("last_battery", -1)
-            if (previous >= 0 && previous - percent >= 3) {
-                if (store.add(PhantomEvent(timestamp = now, type = "BATTERY_DROP", source = "Battery", detail = "Battery fell from $previous% to $percent%", severity = "WARNING"))) added++
+        try {
+            val batteryIntent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+            val level = batteryIntent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
+            val scale = batteryIntent?.getIntExtra(BatteryManager.EXTRA_SCALE, 100) ?: 100
+            val percent = if (level >= 0 && scale > 0) level * 100 / scale else -1
+            if (percent >= 0) {
+                val previous = prefs.getInt("last_battery", -1)
+                if (previous >= 0 && previous - percent >= 3) {
+                    if (store.add(PhantomEvent(timestamp = now, type = "BATTERY_DROP", source = "Battery", detail = "Battery fell from $previous% to $percent%", severity = "WARNING"))) added++
+                }
+                prefs.edit().putInt("last_battery", percent).apply()
             }
-            prefs.edit().putInt("last_battery", percent).apply()
-        }
+        } catch (_: Exception) { }
 
-        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val caps = cm.getNetworkCapabilities(cm.activeNetwork)
-        val network = when {
-            caps == null -> "Offline"
-            caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "Wi-Fi"
-            caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "Mobile data"
-            caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "Ethernet"
-            else -> "Connected"
-        }
-        val previousNetwork = prefs.getString("last_network", null)
-        if (previousNetwork != null && previousNetwork != network) {
-            if (store.add(PhantomEvent(timestamp = now, type = "CONNECTIVITY", source = "Network", detail = "Connection changed: $previousNetwork → $network"))) added++
-        }
-        prefs.edit().putString("last_network", network).apply()
+        // Network state is optional: never let a restricted device or OEM ROM crash the app.
+        try {
+            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val caps = cm.getNetworkCapabilities(cm.activeNetwork)
+            val network = when {
+                caps == null -> "Offline"
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "Wi-Fi"
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "Mobile data"
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "Ethernet"
+                else -> "Connected"
+            }
+            val previousNetwork = prefs.getString("last_network", null)
+            if (previousNetwork != null && previousNetwork != network) {
+                if (store.add(PhantomEvent(timestamp = now, type = "CONNECTIVITY", source = "Network", detail = "Connection changed: $previousNetwork → $network"))) added++
+            }
+            prefs.edit().putString("last_network", network).apply()
+        } catch (_: SecurityException) {
+            // ACCESS_NETWORK_STATE may be unavailable on older or modified Android builds.
+        } catch (_: Exception) { }
+
         if (store.count() == 0) store.add(PhantomEvent(timestamp = now, type = "SYSTEM", source = "ChronoPhantom", detail = "Local event journal initialized"))
         return added
     }
