@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
@@ -42,7 +43,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun PhantomApp(context: Context, collector: DeviceCollector) {
     var tab by remember { mutableIntStateOf(0) }
-    var snapshot by remember { mutableStateOf(collector.snapshot()) }
+    var snapshot by remember { mutableStateOf(DeviceSnapshot()) }
+    LaunchedEffect(Unit) { snapshot = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { collector.snapshot() } }
     var question by remember { mutableStateOf("Why is my data draining?") }
     var summary by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
@@ -97,7 +99,7 @@ private fun PhantomApp(context: Context, collector: DeviceCollector) {
                         }
                         Button(onClick = {
                             if (!collector.hasUsageAccess()) context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
-                            else snapshot = collector.snapshot()
+                            else scope.launch { snapshot = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { collector.snapshot() } }
                         }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Green, contentColor = Void)) {
                             Text(if (collector.hasUsageAccess()) "REFRESH DEVICE PICTURE" else "GRANT USAGE ACCESS")
                         }
@@ -130,7 +132,7 @@ private fun PhantomApp(context: Context, collector: DeviceCollector) {
                         PanelCard {
                             Text("OPENROUTER CONNECTION", color = Green, fontWeight = FontWeight.Bold)
                             Text("Endpoint: https://openrouter.ai/api/v1", color = Muted, fontSize = 11.sp)
-                            OutlinedTextField(value = apiKey, onValueChange = { apiKey = it }, modifier = Modifier.fillMaxWidth(), label = { Text("OpenRouter API key") }, singleLine = true, colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Green, unfocusedBorderColor = Muted))
+                            OutlinedTextField(value = apiKey, onValueChange = { apiKey = it }, modifier = Modifier.fillMaxWidth(), label = { Text("OpenRouter API key") }, singleLine = true, visualTransformation = PasswordVisualTransformation(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Green, unfocusedBorderColor = Muted))
                             Button(onClick = { SecretStore.put(context, apiKey); error = "API key saved securely on this device." }, colors = ButtonDefaults.buttonColors(containerColor = Green, contentColor = Void)) { Text("SAVE API KEY") }
                             if (error.isNotBlank()) Text(error, color = Cyan, fontSize = 11.sp)
                         }
