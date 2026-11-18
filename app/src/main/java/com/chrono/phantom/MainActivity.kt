@@ -73,7 +73,7 @@ private fun PhantomApp(context: Context) {
 
     val settingsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         permissionTick++
-        scope.launch { loadJournal(observer, store, { events = it.first }, { insights = it.second }, { issue = it }) }
+        scope.launch { loadJournal(observer, store, { events = it }, { insights = it }, { issue = it }) }
     }
 
     fun refresh() {
