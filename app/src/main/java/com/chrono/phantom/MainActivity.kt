@@ -32,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -247,7 +246,7 @@ private fun MonitorBar(title: String, enabled: Boolean, note: String, amount: Fl
             Text(title, color = Color.White, fontSize = 11.sp, modifier = Modifier.weight(1f))
             Text(if (enabled) "READY" else "LOCKED", color = if (enabled) Acid else Warning, fontSize = 9.sp, fontWeight = FontWeight.Bold)
         }
-        LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth().height(5.dp).clip(CircleShape), color = if (enabled) Cyan else Warning, trackColor = Color(0xFF26343D), strokeCap = StrokeCap.Round)
+        LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth().height(5.dp).clip(CircleShape), color = if (enabled) Cyan else Warning, trackColor = Color(0xFF26343D))
         Text(note, color = Muted, fontSize = 9.sp)
     }
 }
@@ -349,7 +348,7 @@ private fun AccessPage(observer: DeviceObserver, events: List<PhantomEvent>, ins
         Text("ACCESS CONTROL / DEVICE SETTINGS", color = Muted, fontSize = 10.sp, letterSpacing = 1.5.sp)
         Text("You stay in control.", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         AccessCard("USAGE ACCESS", "Required for app foreground history. Android handles this special permission separately from normal app permissions.", usage, "OPEN USAGE SETTINGS") {
-            openSettings(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).putExtra("package", observerPackage(observer)))
+            openSettings(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
         }
         AccessCard("NOTIFICATION ACCESS", "Optional. Logs the app that posted or dismissed a notification. It never stores notification text or message contents.", notifications, "OPEN NOTIFICATION SETTINGS") {
             openSettings(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
@@ -372,7 +371,6 @@ private fun AccessPage(observer: DeviceObserver, events: List<PhantomEvent>, ins
     }
 }
 
-private fun observerPackage(observer: DeviceObserver): String = observer.packageName()
 
 @Composable
 private fun AccessCard(title: String, description: String, enabled: Boolean, actionLabel: String, onClick: () -> Unit) {
