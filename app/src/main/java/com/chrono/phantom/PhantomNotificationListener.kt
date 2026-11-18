@@ -8,13 +8,17 @@ class PhantomNotificationListener : NotificationListenerService() {
         val label = try {
             packageManager.getApplicationLabel(packageManager.getApplicationInfo(sbn.packageName, 0)).toString()
         } catch (_: Exception) { sbn.packageName }
-        EventStore(this).use {
-            it.add(PhantomEvent(
-                timestamp = sbn.postTime,
-                type = "NOTIFICATION_POSTED",
-                source = label,
-                detail = "A notification was posted by this app"
-            ))
+        try {
+            EventStore(applicationContext).use {
+                it.add(PhantomEvent(
+                    timestamp = sbn.postTime,
+                    type = "NOTIFICATION_POSTED",
+                    source = label,
+                    detail = "A notification was posted by this app"
+                ))
+            }
+        } catch (_: Exception) {
+            // A journal write failure must never take down Android's notification listener.
         }
     }
 
@@ -22,13 +26,17 @@ class PhantomNotificationListener : NotificationListenerService() {
         val label = try {
             packageManager.getApplicationLabel(packageManager.getApplicationInfo(sbn.packageName, 0)).toString()
         } catch (_: Exception) { sbn.packageName }
-        EventStore(this).use {
-            it.add(PhantomEvent(
-                timestamp = System.currentTimeMillis(),
-                type = "NOTIFICATION_REMOVED",
-                source = label,
-                detail = "A notification was dismissed or removed"
-            ))
+        try {
+            EventStore(applicationContext).use {
+                it.add(PhantomEvent(
+                    timestamp = System.currentTimeMillis(),
+                    type = "NOTIFICATION_REMOVED",
+                    source = label,
+                    detail = "A notification was dismissed or removed"
+                ))
+            }
+        } catch (_: Exception) {
+            // Ignore storage errors; the service should remain connected.
         }
     }
 }
