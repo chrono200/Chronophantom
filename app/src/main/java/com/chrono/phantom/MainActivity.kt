@@ -136,7 +136,7 @@ private fun PhantomApp(context: Context) {
                     0 -> CommandPage(events, insights, usage, notifications, busy, ::refresh, { page = it })
                     1 -> TimelinePage(events)
                     2 -> InsightsPage(insights)
-                    else -> AccessPage(observer, events, insights, usage, notifications, settingsLauncher::launch)
+                    else -> AccessPage(observer, events, insights, usage, notifications, { intent -> settingsLauncher.launch(intent) })
                 }
             }
         }
