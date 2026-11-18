@@ -15,6 +15,8 @@ It is not a cleaner, a spy tool, a packet sniffer, or a chat app.
 - **Anomaly detection:** local rules flag unusual notification bursts, repeated connectivity changes, rapid app switching, and battery drops.
 - **Diagnostic reports:** share a readable report containing the selected time window, event counts, notable patterns, and timeline entries.
 - **Privacy-first storage:** event history stays in a local SQLite database. Notification contents are not collected.
+- **Branded launcher identity:** a custom ghost-clock icon, dark system theme, and consistent ChronoPhantom app label.
+- **Failure isolation:** device collection and notification journal errors are contained and shown as recoverable issues instead of terminating the main screen.
 
 ## Platform boundaries
 
@@ -30,7 +32,7 @@ The app collects only after the user enables the relevant Android access. Usage 
 - Gradle 8.11.1
 - compileSdk 36 · targetSdk 35 · minSdk 26
 
-Open in Android Studio and sync Gradle, or run `gradle assembleDebug`. GitHub Actions builds a debug APK on pushes to `main`.
+Open in Android Studio and sync Gradle, or run `gradle assembleDebug`. GitHub Actions builds a debug APK on pushes to `main`. The debug APK is suitable for testing; Android may require uninstalling an older debug-signed build before installing a newly generated APK if its signing key differs.
 
 ## First launch
 
@@ -58,4 +60,4 @@ Open in Android Studio and sync Gradle, or run `gradle assembleDebug`. GitHub Ac
 - `DiagnosticReport.kt` — human-readable report generation
 
 **Application ID:** `com.chrono.phantom`  
-**Version:** `0.2.0`
+**Version:** `0.3.0`
