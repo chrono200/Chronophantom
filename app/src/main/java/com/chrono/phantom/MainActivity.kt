@@ -9,6 +9,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 
 private val Background = Color(0xFF080B0D)
@@ -51,15 +54,25 @@ private fun PhantomApp(context: Context) {
     var events by remember { mutableStateOf(emptyList<PhantomEvent>()) }
     var insights by remember { mutableStateOf(emptyList<PhantomInsight>()) }
     var busy by remember { mutableStateOf(false) }
+    var syncError by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
     fun refresh() {
         scope.launch {
             busy = true
-            withContext(Dispatchers.IO) { observer.sync() }
-            events = withContext(Dispatchers.IO) { store.recent(500) }
-            insights = withContext(Dispatchers.Default) { InsightEngine.analyse(events) }
-            busy = false
+            syncError = null
+            try {
+                withContext(Dispatchers.IO) { observer.sync() }
+                val loaded = withContext(Dispatchers.IO) { store.recent(500) }
+                events = loaded
+                insights = withContext(Dispatchers.Default) { InsightEngine.analyse(loaded) }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                syncError = error.localizedMessage ?: "The device journal could not be updated. Try again."
+            } finally {
+                busy = false
+            }
         }
     }
 
@@ -94,6 +107,14 @@ private fun PhantomApp(context: Context) {
                     }
                 }
                 Spacer(Modifier.height(16.dp))
+                if (syncError != null) {
+                    Panel {
+                        Text("COLLECTION ISSUE", color = Amber, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                        Text(syncError ?: "Unknown error", color = Color.White, fontSize = 12.sp)
+                        Text("ChronoPhantom is still open. You can retry after checking the relevant Android access settings.", color = Dim, fontSize = 10.sp)
+                    }
+                    Spacer(Modifier.height(10.dp))
+                }
                 when (page) {
                     0 -> OverviewPage(events, insights, observer, busy, ::refresh, context)
                     1 -> TimelinePage(events)
@@ -108,7 +129,7 @@ private fun PhantomApp(context: Context) {
 @Composable
 private fun OverviewPage(events: List<PhantomEvent>, insights: List<PhantomInsight>, observer: DeviceObserver, busy: Boolean, refresh: () -> Unit, context: Context) {
     val latest = events.firstOrNull()
-    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(13.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(13.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text("DEVICE SITUATION", color = Dim, fontSize = 10.sp, letterSpacing = 2.sp)
             TextButton(onClick = refresh) { Icon(Icons.Default.Refresh, null, tint = Lime); Text("Sync events", color = Lime) }
@@ -206,7 +227,7 @@ private fun InsightsPage(insights: List<PhantomInsight>) {
 private fun AccessPage(observer: DeviceObserver, context: Context, events: List<PhantomEvent>, insights: List<PhantomInsight>) {
     val usage = observer.hasUsageAccess()
     val notifications = observer.hasNotificationAccess()
-    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("PERMISSION & REPORT CONTROLS", color = Dim, fontSize = 10.sp, letterSpacing = 2.sp)
         Panel {
             Text("USAGE ACCESS", color = Lime, fontWeight = FontWeight.Bold)
