@@ -4,7 +4,9 @@
     <application
         android:allowBackup="false"
         android:label="ChronoPhantom"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar"
+        android:theme="@android:style/Theme.Material.NoActionBar"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:usesCleartextTraffic="false">
         <activity
             android:name=".MainActivity"
